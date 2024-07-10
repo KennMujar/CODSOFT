@@ -1,8 +1,15 @@
 package com.example.todolistapp.Utils;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import com.example.todolistapp.Model.ToDoModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
 
@@ -29,8 +36,54 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             db.execSQL("DROP TABLE IF EXISTS" + TODO_TABLE);
             //Create tables again
             onCreate(db);
+    }
+    public void openDataBase(){
+        db = this.getWritableDatabase();
+    }
 
+    public void insertTask(ToDoModel task){
+        ContentValues cv = new ContentValues();
+        cv.put(TASK, task.getTask());
+        cv.put(STATUS, 0);
+        db.insert(TODO_TABLE, null, cv);
+    }
+    public List<ToDoModel>getAllTasks(){
+        List<ToDoModel> tasklist = new ArrayList<>();
+        Cursor cur = null;
+        db.beginTransaction();
+        try{
+            cur = db.query(TODO_TABLE, null, null, null,null,null, null,null);
+            if(cur != null){
+                if(cur.moveToFirst()){
+                    do{
+                        ToDoModel task = new ToDoModel();
+                        task.setId(cur.getInt(cur.getColumnIndex(ID)));
+                        task.setTask(cur.getString(cur.getColumnIndex(TASK)));
+                        task.setStatus(cur.getInt(cur.getColumnIndex(STATUS)));
+                        tasklist.add(task);
+                    }while(cur.moveToNext());
+                }
+            }
+        }
+        finally{
+            db.endTransaction();
+            cur.close();
+        }
+        return tasklist;
+    }
+    public void updateStauts(int id, int status){
+        ContentValues cv = new ContentValues();
+        cv.put(STATUS, status);
+        db.update(TODO_TABLE, cv, ID + "=?", new String[] {String.valueOf(id)});
+    }
+    public void updateTask(int id, String task){
+        ContentValues cv = new ContentValues();
+        cv.put(TASK, task);
+        db.update(TODO_TABLE, cv, ID + "+?", new String[] {String.valueOf(id)});
 
+    }
+    public void deleteTask(int id){
+        db.delete(TODO_TABLE, ID + "=?", new String[] {String.valueOf(id)});
     }
 
 }
